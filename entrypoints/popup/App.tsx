@@ -8,6 +8,9 @@ function App() {
   const [isCreating, setIsCreating] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
 
+  const DEFAULT_TAB_URL = 'https://www.bing.com';
+  const DEFAULT_TAB_WIDTH = 100; // 设置较窄的宽度
+
   useEffect(() => {
     loadWorkspaces();
   }, []);
@@ -15,6 +18,15 @@ function App() {
   const loadWorkspaces = async () => {
     const spaces = await getWorkspaces();
     setWorkspaces(spaces);
+  };
+
+  const createDefaultTab = async () => {
+    const tab = await chrome.tabs.create({ 
+      url: DEFAULT_TAB_URL,
+      // width: DEFAULT_TAB_WIDTH,
+      pinned: true // 固定标签页
+    });
+    return tab;
   };
 
   const handleCreateWorkspace = async () => {
@@ -38,20 +50,32 @@ function App() {
   };
 
   const handleOpenWorkspace = async (workspace: Workspace) => {
-    // 关闭所有当前标签页
+    // 关闭除了默认标签页之外的所有标签页
     const currentTabs = await chrome.tabs.query({ currentWindow: true });
+    
+    // 先创建默认标签页
+    const defaultTab = await createDefaultTab();
+    
+    // 关闭其他标签页
     await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
-
+    
     // 打开工作区的标签页
     for (const tab of workspace.tabs) {
-      await chrome.tabs.create({ url: tab.url });
+      if (tab.url !== DEFAULT_TAB_URL) {
+        await chrome.tabs.create({ url: tab.url });
+      }
     }
   };
 
   const handleClearTabs = async () => {
     if (confirm('确定要关闭所有标签页吗？')) {
-      const tabs = await chrome.tabs.query({ currentWindow: true });
-      await Promise.all(tabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
+      const currentTabs = await chrome.tabs.query({ currentWindow: true });
+      
+      // 先创建默认标签页
+      await createDefaultTab();
+      
+      // 关闭其他标签页
+      await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
     }
   };
 
