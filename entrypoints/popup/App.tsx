@@ -9,6 +9,9 @@ import {
   getNavigationVisible,
   setNavigationVisible 
 } from '@/utils/storage';
+import { createI18n } from '@wxt-dev/i18n';
+
+const t = createI18n().t;
 
 function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -40,7 +43,7 @@ function App() {
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) {
-      alert('请输入工作区名称');
+      alert(t('popup.workspace.nameRequired'));
       return;
     }
 
@@ -80,7 +83,7 @@ function App() {
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
-    if (confirm('确定要删除这个工作区吗？')) {
+    if (confirm(t('popup.workspace.deleteConfirm'))) {
       await deleteWorkspace(workspaceId);
       await loadWorkspaces();
     }
@@ -107,7 +110,7 @@ function App() {
   };
 
   const handleClearTabs = async () => {
-    if (confirm('确定要关闭所有标签页吗？')) {
+    if (confirm(t('popup.workspace.clearConfirm'))) {
       const currentTabs = await chrome.tabs.query({ currentWindow: true });
       await createDefaultTab();
       await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
@@ -128,7 +131,7 @@ function App() {
   return (
     <div className="w-[400px] min-h-[300px] p-6 bg-gray-50">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">标签页管理器</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('popup.title')}</h1>
         <button
           onClick={toggleNavigation}
           className={`p-2 rounded-lg transition-colors duration-200
@@ -136,7 +139,7 @@ function App() {
               ? 'bg-blue-500 hover:bg-blue-600 text-white' 
               : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
             }`}
-          title={isNavigationVisible ? '隐藏导航栏' : '显示导航栏'}
+          title={isNavigationVisible ? t('popup.actions.hide') : t('popup.actions.show')}
         >
           <svg 
             className="w-5 h-5" 
@@ -169,14 +172,14 @@ function App() {
           className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg 
             transition-colors duration-200 font-medium shadow-sm hover:shadow-md"
         >
-          新建工作区
+          {t('popup.actions.create')}
         </button>
         <button
           onClick={handleClearTabs}
           className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg 
             transition-colors duration-200 font-medium shadow-sm hover:shadow-md"
         >
-          清空标签页
+          {t('popup.actions.clear')}
         </button>
       </div>
 
@@ -186,7 +189,7 @@ function App() {
             type="text"
             value={newWorkspaceName}
             onChange={(e) => setNewWorkspaceName(e.target.value)}
-            placeholder="输入工作区名称"
+            placeholder={t('popup.workspace.input')}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
               focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
           />
@@ -196,24 +199,26 @@ function App() {
               className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white 
                 rounded-lg transition-colors duration-200 font-medium"
             >
-              保存
+              {t('popup.actions.save')}
             </button>
             <button
               onClick={() => setIsCreating(false)}
               className="flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white 
                 rounded-lg transition-colors duration-200 font-medium"
             >
-              取消
+              {t('popup.actions.cancel')}
             </button>
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">已保存的工作区</h2>
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">
+          {t('popup.workspace.saved')}
+        </h2>
         {workspaces.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            还没有保存的工作区
+            {t('popup.workspace.empty')}
           </div>
         ) : (
           <div className="space-y-2">
@@ -265,7 +270,7 @@ function App() {
                       </h3>
                     )}
                     <p className="text-sm text-gray-500">
-                      {workspace.tabs.length} 个标签页
+                      {t('popup.workspace.tabs', workspace.tabs.length)}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -274,7 +279,7 @@ function App() {
                       className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
                         transition-colors duration-200 font-medium"
                     >
-                      打开
+                      {t('popup.actions.open')}
                     </button>
                     <button
                       onClick={() => handleDeleteWorkspace(workspace.id)}

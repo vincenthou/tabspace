@@ -1,0 +1,22 @@
+popup:
+  title: 标签页管理器
+  actions:
+    create: 新建工作区
+    clear: 清空标签页
+    save: 保存
+    cancel: 取消
+    open: 打开
+    delete: 删除
+    show: 显示导航栏
+    hide: 隐藏导航栏
+  workspace:
+    input: 输入工作区名称
+    empty: 还没有保存的工作区
+    tabs:
+      0: 没有标签页
+      1: 1 个标签页
+      n: $1 个标签页
+    deleteConfirm: 确定要删除这个工作区吗？
+    nameRequired: 请输入工作区名称
+    clearConfirm: 确定要关闭所有标签页吗？
+    saved: 已保存的工作区
