@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Workspace } from '@/types';
-import { getWorkspaces, saveWorkspace } from '@/utils/storage';
+import { Workspace, TabInfo } from '@/types';
+import { getWorkspaces, saveWorkspace, updateWorkspace, deleteWorkspace, setActiveWorkspace } from '@/utils/storage';
 
 function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
+  const [editingWorkspace, setEditingWorkspace] = useState<string | null>(null);
 
   const DEFAULT_TAB_URL = 'https://www.bing.com';
-  const DEFAULT_TAB_WIDTH = 100; // 设置较窄的宽度
 
   useEffect(() => {
     loadWorkspaces();
@@ -22,8 +23,7 @@ function App() {
   const createDefaultTab = async () => {
     const tab = await chrome.tabs.create({ 
       url: DEFAULT_TAB_URL,
-      // width: DEFAULT_TAB_WIDTH,
-      pinned: true // 固定标签页
+      pinned: true
     });
     return tab;
   };
@@ -35,10 +35,16 @@ function App() {
     }
 
     const tabs = await chrome.tabs.query({ currentWindow: true });
+    const tabInfos: TabInfo[] = tabs.map(tab => ({
+      url: tab.url || '',
+      title: tab.title || '',
+      favIconUrl: tab.favIconUrl || ''
+    }));
+
     const newWorkspace: Workspace = {
       id: Date.now().toString(),
       name: newWorkspaceName.trim(),
-      tabs,
+      tabs: tabInfos,
       createdAt: Date.now()
     };
 
@@ -49,31 +55,51 @@ function App() {
   };
 
   const handleOpenWorkspace = async (workspace: Workspace) => {
-    // 关闭除了默认标签页之外的所有标签页
     const currentTabs = await chrome.tabs.query({ currentWindow: true });
-    
-    // 先创建默认标签页
-    const defaultTab = await createDefaultTab();
-    
-    // 关闭其他标签页
+    await createDefaultTab();
     await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
     
-    // 打开工作区的标签页
     for (const tab of workspace.tabs) {
       if (tab.url !== DEFAULT_TAB_URL) {
         await chrome.tabs.create({ url: tab.url });
       }
     }
+
+    await setActiveWorkspace(workspace.id);
+    await loadWorkspaces();
+  };
+
+  const handleDeleteWorkspace = async (workspaceId: string) => {
+    if (confirm('确定要删除这个工作区吗？')) {
+      await deleteWorkspace(workspaceId);
+      await loadWorkspaces();
+    }
+  };
+
+  const handleUpdateWorkspaceName = async (workspace: Workspace, newName: string) => {
+    if (newName.trim()) {
+      await updateWorkspace({ ...workspace, name: newName.trim() });
+      setEditingWorkspace(null);
+      await loadWorkspaces();
+    }
+  };
+
+  const toggleWorkspaceExpand = (workspaceId: string) => {
+    setExpandedWorkspaces(prev => {
+      const next = new Set(prev);
+      if (next.has(workspaceId)) {
+        next.delete(workspaceId);
+      } else {
+        next.add(workspaceId);
+      }
+      return next;
+    });
   };
 
   const handleClearTabs = async () => {
     if (confirm('确定要关闭所有标签页吗？')) {
       const currentTabs = await chrome.tabs.query({ currentWindow: true });
-      
-      // 先创建默认标签页
       await createDefaultTab();
-      
-      // 关闭其他标签页
       await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
     }
   };
@@ -139,22 +165,95 @@ function App() {
             {workspaces.map(workspace => (
               <div 
                 key={workspace.id} 
-                className="flex items-center gap-3 p-4 bg-white rounded-lg shadow-sm 
-                  hover:shadow-md transition-shadow duration-200"
+                className={`bg-white rounded-lg shadow-sm hover:shadow-md 
+                  transition-shadow duration-200 overflow-hidden
+                  ${workspace.isActive ? 'ring-2 ring-blue-500' : ''}`}
               >
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-800">{workspace.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {workspace.tabs.length} 个标签页
-                  </p>
+                <div className="flex items-center gap-3 p-4">
+                  <button
+                    onClick={() => toggleWorkspaceExpand(workspace.id)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg
+                      className={`w-5 h-5 transform transition-transform
+                        ${expandedWorkspaces.has(workspace.id) ? 'rotate-90' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex-1">
+                    {editingWorkspace === workspace.id ? (
+                      <input
+                        type="text"
+                        defaultValue={workspace.name}
+                        onBlur={(e) => handleUpdateWorkspaceName(workspace, e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleUpdateWorkspaceName(workspace, e.currentTarget.value);
+                          }
+                        }}
+                        className="w-full px-2 py-1 border border-gray-300 rounded"
+                        autoFocus
+                      />
+                    ) : (
+                      <h3 className="font-medium text-gray-800 cursor-pointer"
+                          onClick={() => setEditingWorkspace(workspace.id)}>
+                        {workspace.name}
+                      </h3>
+                    )}
+                    <p className="text-sm text-gray-500">
+                      {workspace.tabs.length} 个标签页
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenWorkspace(workspace)}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
+                        transition-colors duration-200 font-medium"
+                    >
+                      打开
+                    </button>
+                    <button
+                      onClick={() => handleDeleteWorkspace(workspace.id)}
+                      className="p-2 text-red-500 hover:text-red-600 rounded-lg"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleOpenWorkspace(workspace)}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
-                    transition-colors duration-200 font-medium"
-                >
-                  打开
-                </button>
+                
+                {expandedWorkspaces.has(workspace.id) && (
+                  <div className="border-t border-gray-100 divide-y divide-gray-100">
+                    {workspace.tabs.map((tab, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 hover:bg-gray-50">
+                        <img
+                          src={tab.favIconUrl || 'default-favicon.png'}
+                          alt=""
+                          className="w-4 h-4"
+                        />
+                        <a
+                          href={tab.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-gray-600 hover:text-blue-500 truncate"
+                        >
+                          {tab.title}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
