@@ -2,7 +2,8 @@ import { Workspace } from '@/types';
 
 export const StorageKeys = {
   WORKSPACES: 'workspaces',
-  ACTIVE_WORKSPACE: 'activeWorkspace'
+  ACTIVE_WORKSPACE: 'activeWorkspace',
+  NAVIGATION_VISIBLE: 'navigationVisible'
 } as const;
 
 export async function getWorkspaces(): Promise<Workspace[]> {
@@ -39,3 +40,12 @@ export async function setActiveWorkspace(workspaceId: string): Promise<void> {
   }));
   await chrome.storage.local.set({ [StorageKeys.WORKSPACES]: updatedWorkspaces });
 }
+
+export async function getNavigationVisible(): Promise<boolean> {
+  const result = await chrome.storage.local.get(StorageKeys.NAVIGATION_VISIBLE);
+  return result[StorageKeys.NAVIGATION_VISIBLE] ?? false;
+}
+
+export async function setNavigationVisible(visible: boolean): Promise<void> {
+  await chrome.storage.local.set({ [StorageKeys.NAVIGATION_VISIBLE]: visible });
+} 
