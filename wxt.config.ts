@@ -4,4 +4,11 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   extensionApi: 'chrome',
   modules: ['@wxt-dev/module-react'],
+  manifest: {
+    permissions: [
+      'tabs',
+      'storage'
+    ],
+    // ... 其他配置
+  }
 });
