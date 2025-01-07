@@ -84,6 +84,9 @@ function App() {
   };
 
   const handleOpenWorkspace = async (workspace: Workspace) => {
+    await setActiveWorkspace(workspace.id);
+    await loadWorkspaces();
+
     const currentTabs = await chrome.tabs.query({ currentWindow: true });
     
     // 创建默认标签页
@@ -118,9 +121,6 @@ function App() {
     if (firstNonDefaultTab?.id) {
       await chrome.tabs.update(firstNonDefaultTab.id, { active: true });
     }
-
-    await setActiveWorkspace(workspace.id);
-    await loadWorkspaces();
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {

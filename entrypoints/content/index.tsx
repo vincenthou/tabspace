@@ -10,7 +10,8 @@ export default defineContentScript({
   async main(ctx) {
     const ui = await createShadowRootUi(ctx, {
       name: 'navigation-bar',
-      position: 'inline',
+      position: 'overlay',
+      zIndex: 999999,
       anchor: 'body',
       append: 'first',
       onMount: async (container) => {
