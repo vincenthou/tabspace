@@ -36,7 +36,8 @@ function App() {
   const createDefaultTab = async () => {
     const tab = await chrome.tabs.create({ 
       url: DEFAULT_TAB_URL,
-      pinned: true
+      pinned: true,
+      active: false,
     });
     return tab;
   };
@@ -69,13 +70,38 @@ function App() {
 
   const handleOpenWorkspace = async (workspace: Workspace) => {
     const currentTabs = await chrome.tabs.query({ currentWindow: true });
-    await createDefaultTab();
-    await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
     
+    // 创建默认标签页
+    const defaultTab = await createDefaultTab();
+    
+    // 创建新标签页并保存它们的ID
+    const newTabIds = new Set<number>();
     for (const tab of workspace.tabs) {
       if (tab.url !== DEFAULT_TAB_URL) {
-        await chrome.tabs.create({ url: tab.url });
+        const newTab = await chrome.tabs.create({ 
+          url: tab.url,
+          active: false  // 创建时不激活
+        });
+        if (newTab.id) {
+          newTabIds.add(newTab.id);
+        }
       }
+    }
+    
+    // 删除旧标签页
+    await Promise.all(currentTabs.map(tab => {
+      if (tab.id && !newTabIds.has(tab.id)) {
+        return chrome.tabs.remove(tab.id);
+      }
+    }));
+
+    // 激活第一个非默认标签页
+    const allTabs = await chrome.tabs.query({ currentWindow: true });
+    const firstNonDefaultTab = allTabs.find(tab => 
+      tab.url !== DEFAULT_TAB_URL && newTabIds.has(tab.id!)
+    );
+    if (firstNonDefaultTab?.id) {
+      await chrome.tabs.update(firstNonDefaultTab.id, { active: true });
     }
 
     await setActiveWorkspace(workspace.id);
