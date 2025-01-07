@@ -21,7 +21,7 @@ function App() {
   const [editingWorkspace, setEditingWorkspace] = useState<string | null>(null);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
 
-  const DEFAULT_TAB_URL = 'https://www.bing.com';
+  const DEFAULT_TAB_URL = chrome.runtime.getURL('options.html');
 
   useEffect(() => {
     loadWorkspaces();
@@ -49,11 +49,16 @@ function App() {
     }
 
     const tabs = await chrome.tabs.query({ currentWindow: true });
-    const tabInfos: TabInfo[] = tabs.map(tab => ({
-      url: tab.url || '',
-      title: tab.title || '',
-      favIconUrl: tab.favIconUrl || ''
-    }));
+    const optionsUrl = chrome.runtime.getURL('options.html');
+    
+    // 过滤掉options页面
+    const tabInfos: TabInfo[] = tabs
+      .filter(tab => tab.url !== optionsUrl)
+      .map(tab => ({
+        url: tab.url || '',
+        title: tab.title || '',
+        favIconUrl: tab.favIconUrl || ''
+      }));
 
     const newWorkspace: Workspace = {
       id: Date.now().toString(),
@@ -155,7 +160,7 @@ function App() {
   };
 
   return (
-    <div className="w-[400px] min-h-[300px] p-6 bg-gray-50">
+    <div className="max-w-4xl mx-auto py-8 px-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">{t('popup.title')}</h1>
         <button

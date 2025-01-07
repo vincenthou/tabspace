@@ -9,6 +9,14 @@ export default defineConfig({
       'tabs',
       'storage'
     ],
-    default_locale: 'en'
+    default_locale: 'en',
+    options_ui: {
+      page: 'options/index.html',
+      open_in_tab: true
+    },
+    background: {
+      service_worker: 'background.ts'
+    },
+    action: {}
   }
 });
