@@ -260,12 +260,16 @@ function App() {
           
           <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between pb-2 border-b">
-              <h3 className="font-medium text-gray-700">当前打开的标签页</h3>
+              <h3 className="font-medium text-gray-700">
+                {t('popup.workspace.currentTabs')}
+              </h3>
               <button
                 onClick={toggleSelectAll}
                 className="text-sm text-blue-500 hover:text-blue-600"
               >
-                {selectedTabUrls.size === currentTabs.length ? '取消全选' : '全选'}
+                {selectedTabUrls.size === currentTabs.length 
+                  ? t('popup.workspace.deselectAll') 
+                  : t('popup.workspace.selectAll')}
               </button>
             </div>
             <div className="max-h-60 overflow-y-auto space-y-2">

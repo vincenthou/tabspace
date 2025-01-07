@@ -20,3 +20,6 @@ popup:
     nameRequired: 请输入工作区名称
     clearConfirm: 确定要关闭所有标签页吗？
     saved: 已保存的工作区
+    currentTabs: 当前打开的标签页
+    selectAll: 全选
+    deselectAll: 取消全选

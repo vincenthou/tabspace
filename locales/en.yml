@@ -19,4 +19,7 @@ popup:
     deleteConfirm: Are you sure you want to delete this workspace?
     nameRequired: Please enter workspace name
     clearConfirm: Are you sure you want to close all tabs?
-    saved: Saved Workspaces 
+    saved: Saved Workspaces
+    currentTabs: Current Tabs
+    selectAll: Select All
+    deselectAll: Deselect All 
