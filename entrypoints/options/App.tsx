@@ -20,12 +20,15 @@ function App() {
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
   const [editingWorkspace, setEditingWorkspace] = useState<string | null>(null);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
+  const [currentTabs, setCurrentTabs] = useState<TabInfo[]>([]);
+  const [selectedTabUrls, setSelectedTabUrls] = useState<Set<string>>(new Set());
 
   const DEFAULT_TAB_URL = chrome.runtime.getURL('options.html');
 
   useEffect(() => {
     loadWorkspaces();
     loadNavigationState();
+    loadCurrentTabs();
   }, []);
 
   const loadWorkspaces = async () => {
@@ -42,23 +45,30 @@ function App() {
     return tab;
   };
 
-  const handleCreateWorkspace = async () => {
-    if (!newWorkspaceName.trim()) {
-      alert(t('popup.workspace.nameRequired'));
-      return;
-    }
-
+  const loadCurrentTabs = async () => {
     const tabs = await chrome.tabs.query({ currentWindow: true });
     const optionsUrl = chrome.runtime.getURL('options.html');
-    
-    // 过滤掉options页面
-    const tabInfos: TabInfo[] = tabs
+    const tabInfos = tabs
       .filter(tab => tab.url !== optionsUrl)
       .map(tab => ({
         url: tab.url || '',
         title: tab.title || '',
         favIconUrl: tab.favIconUrl || ''
       }));
+
+    setCurrentTabs(tabInfos);
+    // 默认全选所有标签页
+    setSelectedTabUrls(new Set(tabInfos.map(tab => tab.url)));
+  };
+
+  const handleCreateWorkspace = async () => {
+    if (!newWorkspaceName.trim()) {
+      alert(t('popup.workspace.nameRequired'));
+      return;
+    }
+
+    // 只保存选中的标签页
+    const tabInfos = currentTabs.filter(tab => selectedTabUrls.has(tab.url));
 
     const newWorkspace: Workspace = {
       id: Date.now().toString(),
@@ -159,6 +169,26 @@ function App() {
     setIsNavigationVisible(newState);
   };
 
+  const toggleTabSelection = (url: string) => {
+    setSelectedTabUrls(prev => {
+      const next = new Set(prev);
+      if (next.has(url)) {
+        next.delete(url);
+      } else {
+        next.add(url);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTabUrls.size === currentTabs.length) {
+      setSelectedTabUrls(new Set());
+    } else {
+      setSelectedTabUrls(new Set(currentTabs.map(tab => tab.url)));
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-6">
       <div className="flex items-center justify-between mb-6">
@@ -199,7 +229,10 @@ function App() {
       
       <div className="flex gap-3 mb-6">
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={async () => {
+            await loadCurrentTabs();
+            setIsCreating(true);
+          }}
           className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg 
             transition-colors duration-200 font-medium shadow-sm hover:shadow-md"
         >
@@ -224,7 +257,41 @@ function App() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
               focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
           />
-          <div className="flex gap-3">
+          
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b">
+              <h3 className="font-medium text-gray-700">当前打开的标签页</h3>
+              <button
+                onClick={toggleSelectAll}
+                className="text-sm text-blue-500 hover:text-blue-600"
+              >
+                {selectedTabUrls.size === currentTabs.length ? '取消全选' : '全选'}
+              </button>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {currentTabs.map((tab, index) => (
+                <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                  <input
+                    type="checkbox"
+                    checked={selectedTabUrls.has(tab.url)}
+                    onChange={() => toggleTabSelection(tab.url)}
+                    className="w-4 h-4 text-blue-500 rounded border-gray-300 
+                      focus:ring-blue-500 cursor-pointer"
+                  />
+                  <img 
+                    src={tab.favIconUrl || 'default-favicon.png'} 
+                    alt=""
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-600 truncate flex-1">
+                    {tab.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
             <button
               onClick={handleCreateWorkspace}
               className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white 
