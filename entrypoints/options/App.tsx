@@ -23,6 +23,7 @@ function App() {
   const [currentTabs, setCurrentTabs] = useState<TabInfo[]>([]);
   const [selectedTabUrls, setSelectedTabUrls] = useState<Set<string>>(new Set());
   const [editedTitles, setEditedTitles] = useState<Record<string, string>>({});
+  const [editingTabInfo, setEditingTabInfo] = useState<{workspaceId: string, url: string} | null>(null);
 
   const DEFAULT_TAB_URL = chrome.runtime.getURL('options.html');
 
@@ -202,6 +203,17 @@ function App() {
       ...prev,
       [url]: newTitle
     }));
+  };
+
+  const handleUpdateTabTitle = async (workspace: Workspace, tabUrl: string, newTitle: string) => {
+    if (newTitle.trim()) {
+      const updatedTabs = workspace.tabs.map(tab => 
+        tab.url === tabUrl ? { ...tab, title: newTitle.trim() } : tab
+      );
+      await updateWorkspace({ ...workspace, tabs: updatedTabs });
+      setEditingTabInfo(null);
+      await loadWorkspaces();
+    }
   };
 
   return (
@@ -424,14 +436,49 @@ function App() {
                           alt=""
                           className="w-4 h-4"
                         />
-                        <a
-                          href={tab.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-gray-600 hover:text-blue-500 truncate"
-                        >
-                          {tab.title}
-                        </a>
+                        <div className="flex-1 flex items-center gap-2">
+                          {editingTabInfo?.workspaceId === workspace.id && 
+                           editingTabInfo?.url === tab.url ? (
+                            <input
+                              type="text"
+                              defaultValue={tab.title}
+                              autoFocus
+                              className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 
+                                focus:ring-blue-500 focus:border-blue-500 outline-none"
+                              onBlur={(e) => handleUpdateTabTitle(workspace, tab.url, e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleUpdateTabTitle(workspace, tab.url, e.currentTarget.value);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <a
+                              href={tab.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 text-sm text-gray-600 hover:text-blue-500 truncate"
+                            >
+                              {tab.title}
+                            </a>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault(); // 防止触发链接点击
+                              setEditingTabInfo({
+                                workspaceId: workspace.id,
+                                url: tab.url
+                              });
+                            }}
+                            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
