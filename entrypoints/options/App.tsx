@@ -6,6 +6,7 @@ import {
   updateWorkspace, 
   deleteWorkspace, 
   setActiveWorkspace,
+  resetActiveWorkspace,
   getNavigationVisible,
   setNavigationVisible 
 } from '@/utils/storage';
@@ -74,7 +75,7 @@ export function SortableTab({
         ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}
       onClick={isCreating ? onSelect : undefined}
     >
-      {!isCreating && (
+      {isCreating && (
         <div
           className="cursor-move p-1 text-gray-400 hover:text-gray-600"
           {...attributes}
@@ -162,7 +163,7 @@ function App() {
     return tab;
   };
 
-  const loadCurrentTabs = async () => {
+  const loadCurrentTabs = async (selectAll: boolean = false) => {
     const tabs = await chrome.tabs.query({ currentWindow: true });
     const optionsUrl = chrome.runtime.getURL('options.html');
     const tabInfos = tabs
@@ -175,7 +176,7 @@ function App() {
 
     setCurrentTabs(tabInfos);
     // 默认全选所有标签页
-    setSelectedTabUrls(new Set(tabInfos.map(tab => tab.url)));
+    selectAll && setSelectedTabUrls(new Set(tabInfos.map(tab => tab.url)));
   };
 
   const handleSaveWorkspace = async () => {
@@ -278,6 +279,7 @@ function App() {
     if (confirm(t('popup.workspace.clearConfirm'))) {
       const currentTabs = await chrome.tabs.query({ currentWindow: true });
       await createDefaultTab();
+      await resetActiveWorkspace();
       await Promise.all(currentTabs.map(tab => tab.id && chrome.tabs.remove(tab.id)));
     }
   };
@@ -421,7 +423,7 @@ function App() {
                 <button
                   onClick={() => {
                     setIsCreating(true);
-                    setSelectedTabUrls(new Set());
+                    loadCurrentTabs(true);
                   }}
                   className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg 
                     transition-colors duration-200 font-medium shadow-sm hover:shadow-md"

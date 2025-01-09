@@ -41,6 +41,15 @@ export async function setActiveWorkspace(workspaceId: string): Promise<void> {
   await chrome.storage.local.set({ [StorageKeys.WORKSPACES]: updatedWorkspaces });
 }
 
+export async function resetActiveWorkspace(): Promise<void> {
+  const workspaces = await getWorkspaces();
+  const updatedWorkspaces = workspaces.map(workspace => ({
+    ...workspace,
+    isActive: false
+  }));
+  await chrome.storage.local.set({ [StorageKeys.WORKSPACES]: updatedWorkspaces });
+}
+
 export async function getNavigationVisible(): Promise<boolean> {
   const result = await chrome.storage.local.get(StorageKeys.NAVIGATION_VISIBLE);
   return result[StorageKeys.NAVIGATION_VISIBLE] ?? false;
