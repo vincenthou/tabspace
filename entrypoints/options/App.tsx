@@ -37,11 +37,13 @@ function SortableTab({ tab, index, workspace, isCreating, ...props }: any) {
     setNodeRef,
     transform,
     transition,
+    isDragging,
+    isSorting
   } = useSortable({ id: isCreating ? `tab-${index}` : `${workspace?.id}-tab-${index}` });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isSorting ? transition : 'none',
   };
 
   return (
@@ -49,14 +51,14 @@ function SortableTab({ tab, index, workspace, isCreating, ...props }: any) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded"
+      className={`flex items-center gap-3 p-2 rounded
+        ${isDragging ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
     >
       <div {...listeners} className="cursor-grab text-gray-400 hover:text-gray-600">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      {/* 原有的标签内容 */}
       {props.children}
     </div>
   );
