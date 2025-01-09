@@ -91,6 +91,26 @@ function App() {
     loadCurrentTabs();
   }, []);
 
+  // 添加 chrome.tabs 事件监听
+  useEffect(() => {
+    const handleTabsChanged = () => {
+      loadCurrentTabs();
+    };
+
+    // 监听标签页的创建、删除、更新和移动事件
+    chrome.tabs.onCreated.addListener(handleTabsChanged);
+    chrome.tabs.onRemoved.addListener(handleTabsChanged);
+    chrome.tabs.onUpdated.addListener(handleTabsChanged);
+    chrome.tabs.onMoved.addListener(handleTabsChanged);
+
+    return () => {
+      chrome.tabs.onCreated.removeListener(handleTabsChanged);
+      chrome.tabs.onRemoved.removeListener(handleTabsChanged);
+      chrome.tabs.onUpdated.removeListener(handleTabsChanged);
+      chrome.tabs.onMoved.removeListener(handleTabsChanged);
+    };
+  }, []);
+
   const loadWorkspaces = async () => {
     const spaces = await getWorkspaces();
     setWorkspaces(spaces);
@@ -338,12 +358,52 @@ function App() {
         </button>
       </div>
       
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">
+          {t('popup.currentTabs')}
+        </h2>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={currentTabs.map((_, index) => `tab-${index}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {currentTabs.map((tab, index) => (
+                  <SortableTab
+                    key={`tab-${index}`}
+                    tab={tab}
+                    index={index}
+                    isCreating={false}
+                  >
+                    <img 
+                      src={tab.favIconUrl || 'default-favicon.png'} 
+                      alt=""
+                      className="w-4 h-4 flex-shrink-0"
+                    />
+                    <a
+                      href={tab.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-sm text-gray-600 hover:text-blue-500 truncate"
+                    >
+                      {tab.title}
+                    </a>
+                  </SortableTab>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+      </div>
+
       <div className="flex gap-3 mb-6">
         <button
-          onClick={async () => {
-            await loadCurrentTabs();
-            setIsCreating(true);
-          }}
+          onClick={() => setIsCreating(true)}
           className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg 
             transition-colors duration-200 font-medium shadow-sm hover:shadow-md"
         >
