@@ -22,6 +22,7 @@ function App() {
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [currentTabs, setCurrentTabs] = useState<TabInfo[]>([]);
   const [selectedTabUrls, setSelectedTabUrls] = useState<Set<string>>(new Set());
+  const [editedTitles, setEditedTitles] = useState<Record<string, string>>({});
 
   const DEFAULT_TAB_URL = chrome.runtime.getURL('options.html');
 
@@ -67,8 +68,14 @@ function App() {
       return;
     }
 
-    // 只保存选中的标签页
-    const tabInfos = currentTabs.filter(tab => selectedTabUrls.has(tab.url));
+    // 使用编辑后的标题创建工作区
+    const tabInfos = currentTabs
+      .filter(tab => selectedTabUrls.has(tab.url))
+      .map(tab => ({
+        url: tab.url,
+        title: editedTitles[tab.url] || tab.title, // 使用编辑后的标题，如果没有编辑则使用原标题
+        favIconUrl: tab.favIconUrl
+      }));
 
     const newWorkspace: Workspace = {
       id: Date.now().toString(),
@@ -80,6 +87,7 @@ function App() {
     await saveWorkspace(newWorkspace);
     setNewWorkspaceName('');
     setIsCreating(false);
+    setEditedTitles({}); // 清空编辑状态
     await loadWorkspaces();
   };
 
@@ -189,6 +197,13 @@ function App() {
     }
   };
 
+  const handleTitleEdit = (url: string, newTitle: string) => {
+    setEditedTitles(prev => ({
+      ...prev,
+      [url]: newTitle
+    }));
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-6">
       <div className="flex items-center justify-between mb-6">
@@ -285,11 +300,16 @@ function App() {
                   <img 
                     src={tab.favIconUrl || 'default-favicon.png'} 
                     alt=""
-                    className="w-4 h-4"
+                    className="w-4 h-4 flex-shrink-0"
                   />
-                  <span className="text-sm text-gray-600 truncate flex-1">
-                    {tab.title}
-                  </span>
+                  <input
+                    type="text"
+                    value={editedTitles[tab.url] || tab.title}
+                    onChange={(e) => handleTitleEdit(tab.url, e.target.value)}
+                    className="text-sm text-gray-600 flex-1 px-2 py-1 rounded border border-transparent
+                      hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
+                      outline-none transition-colors"
+                  />
                 </div>
               ))}
             </div>
