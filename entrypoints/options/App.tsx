@@ -35,6 +35,7 @@ interface SortableTabProps {
   isCreating: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
+  workspace?: Workspace;
   children: React.ReactNode;
 }
 
@@ -44,6 +45,7 @@ export function SortableTab({
   isCreating,
   isSelected,
   onSelect,
+  workspace,
   children
 }: SortableTabProps) {
   const {
@@ -52,22 +54,39 @@ export function SortableTab({
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: `tab-${index}` });
+  } = useSortable({ 
+    id: workspace 
+      ? `${workspace.id}-tab-${index}` 
+      : `tab-${index}` 
+  });
+
+  const style = transform ? {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } : undefined;
 
   return (
     <div
       ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      className={`flex items-center gap-3 p-3 bg-white border rounded-lg cursor-move
+      style={style}
+      className={`flex items-center gap-3 p-3 bg-white border rounded-lg
         ${isCreating ? 'hover:bg-gray-50' : ''}
         ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}
       onClick={isCreating ? onSelect : undefined}
-      {...attributes}
-      {...listeners}
     >
+      {!isCreating && (
+        <div
+          className="cursor-move p-1 text-gray-400 hover:text-gray-600"
+          {...attributes}
+          {...listeners}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
+      )}
+      
       {isCreating && (
         <input
           type="checkbox"
