@@ -10,8 +10,57 @@ import {
   setNavigationVisible 
 } from '@/utils/storage';
 import { createI18n } from '@wxt-dev/i18n';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const t = createI18n().t;
+
+// 创建可排序的标签项组件
+function SortableTab({ tab, index, workspace, isCreating, ...props }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: isCreating ? `tab-${index}` : `${workspace?.id}-tab-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded"
+    >
+      <div {...listeners} className="cursor-grab text-gray-400 hover:text-gray-600">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+        </svg>
+      </div>
+      {/* 原有的标签内容 */}
+      {props.children}
+    </div>
+  );
+}
 
 function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -26,6 +75,13 @@ function App() {
   const [editingTabInfo, setEditingTabInfo] = useState<{workspaceId: string, url: string} | null>(null);
 
   const DEFAULT_TAB_URL = chrome.runtime.getURL('options.html');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     loadWorkspaces();
@@ -216,6 +272,32 @@ function App() {
     }
   };
 
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    if (active.id !== over.id) {
+      setCurrentTabs((items) => {
+        const oldIndex = parseInt(active.id.split('-')[1]);
+        const newIndex = parseInt(over.id.split('-')[1]);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleWorkspaceTabDragEnd = async (workspace: Workspace, event: any) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    if (active.id !== over.id) {
+      const oldIndex = parseInt(active.id.split('-')[2]);
+      const newIndex = parseInt(over.id.split('-')[2]);
+      const newTabs = arrayMove(workspace.tabs, oldIndex, newIndex);
+      await updateWorkspace({ ...workspace, tabs: newTabs });
+      await loadWorkspaces();
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-6">
       <div className="flex items-center justify-between mb-6">
@@ -280,69 +362,82 @@ function App() {
             type="text"
             value={newWorkspaceName}
             onChange={(e) => setNewWorkspaceName(e.target.value)}
-            placeholder={t('popup.workspace.input')}
+            placeholder={t('popup.workspace.namePlaceholder')}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-              focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
+              focus:ring-blue-500 focus:border-blue-500 outline-none"
           />
           
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between pb-2 border-b">
-              <h3 className="font-medium text-gray-700">
-                {t('popup.workspace.currentTabs')}
-              </h3>
-              <button
-                onClick={toggleSelectAll}
-                className="text-sm text-blue-500 hover:text-blue-600"
-              >
-                {selectedTabUrls.size === currentTabs.length 
-                  ? t('popup.workspace.deselectAll') 
-                  : t('popup.workspace.selectAll')}
-              </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedTabUrls.size === currentTabs.length}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 text-blue-500 rounded border-gray-300"
+              />
+              <span className="text-sm text-gray-600">{t('popup.workspace.selectAll')}</span>
             </div>
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {currentTabs.map((tab, index) => (
-                <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedTabUrls.has(tab.url)}
-                    onChange={() => toggleTabSelection(tab.url)}
-                    className="w-4 h-4 text-blue-500 rounded border-gray-300 
-                      focus:ring-blue-500 cursor-pointer"
-                  />
-                  <img 
-                    src={tab.favIconUrl || 'default-favicon.png'} 
-                    alt=""
-                    className="w-4 h-4 flex-shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={editedTitles[tab.url] !== undefined ? editedTitles[tab.url] : tab.title}
-                    onChange={(e) => handleTitleEdit(tab.url, e.target.value)}
-                    className="text-sm text-gray-600 flex-1 px-2 py-1 rounded border border-transparent
-                      hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
-                      outline-none transition-colors"
-                  />
-                </div>
-              ))}
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsCreating(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 
+                  transition-colors duration-200"
+              >
+                {t('popup.actions.cancel')}
+              </button>
+              <button
+                onClick={handleCreateWorkspace}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
+                  transition-colors duration-200 font-medium"
+              >
+                {t('popup.actions.save')}
+              </button>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={handleCreateWorkspace}
-              className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white 
-                rounded-lg transition-colors duration-200 font-medium"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={currentTabs.map((_, index) => `tab-${index}`)}
+              strategy={verticalListSortingStrategy}
             >
-              {t('popup.actions.save')}
-            </button>
-            <button
-              onClick={() => setIsCreating(false)}
-              className="flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white 
-                rounded-lg transition-colors duration-200 font-medium"
-            >
-              {t('popup.actions.cancel')}
-            </button>
-          </div>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {currentTabs.map((tab, index) => (
+                  <SortableTab
+                    key={`tab-${index}`}
+                    tab={tab}
+                    index={index}
+                    isCreating={true}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTabUrls.has(tab.url)}
+                      onChange={() => toggleTabSelection(tab.url)}
+                      className="w-4 h-4 text-blue-500 rounded border-gray-300 
+                        focus:ring-blue-500 cursor-pointer"
+                    />
+                    <img 
+                      src={tab.favIconUrl || 'default-favicon.png'} 
+                      alt=""
+                      className="w-4 h-4 flex-shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={editedTitles[tab.url] !== undefined ? editedTitles[tab.url] : tab.title}
+                      onChange={(e) => handleTitleEdit(tab.url, e.target.value)}
+                      className="text-sm text-gray-600 flex-1 px-2 py-1 rounded border border-transparent
+                        hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
+                        outline-none transition-colors"
+                    />
+                  </SortableTab>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 
@@ -428,60 +523,77 @@ function App() {
                 </div>
                 
                 {expandedWorkspaces.has(workspace.id) && (
-                  <div className="border-t border-gray-100 divide-y divide-gray-100">
-                    {workspace.tabs.map((tab, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 hover:bg-gray-50">
-                        <img
-                          src={tab.favIconUrl || 'default-favicon.png'}
-                          alt=""
-                          className="w-4 h-4"
-                        />
-                        <div className="flex-1 flex items-center gap-2">
-                          {editingTabInfo?.workspaceId === workspace.id && 
-                           editingTabInfo?.url === tab.url ? (
-                            <input
-                              type="text"
-                              defaultValue={tab.title}
-                              autoFocus
-                              className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 
-                                focus:ring-blue-500 focus:border-blue-500 outline-none"
-                              onBlur={(e) => handleUpdateTabTitle(workspace, tab.url, e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleUpdateTabTitle(workspace, tab.url, e.currentTarget.value);
-                                }
-                              }}
-                            />
-                          ) : (
-                            <a
-                              href={tab.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 text-sm text-gray-600 hover:text-blue-500 truncate"
-                            >
-                              {tab.title}
-                            </a>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault(); // 防止触发链接点击
-                              setEditingTabInfo({
-                                workspaceId: workspace.id,
-                                url: tab.url
-                              });
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => handleWorkspaceTabDragEnd(workspace, event)}
+                  >
+                    <SortableContext
+                      items={workspace.tabs.map((_, index) => `${workspace.id}-tab-${index}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="border-t border-gray-100 divide-y divide-gray-100">
+                        {workspace.tabs.map((tab, index) => (
+                          <SortableTab
+                            key={`${workspace.id}-tab-${index}`}
+                            tab={tab}
+                            index={index}
+                            workspace={workspace}
+                            isCreating={false}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
-                              />
-                            </svg>
-                          </button>
-                        </div>
+                            <img
+                              src={tab.favIconUrl || 'default-favicon.png'}
+                              alt=""
+                              className="w-4 h-4"
+                            />
+                            <div className="flex-1 flex items-center gap-2">
+                              {editingTabInfo?.workspaceId === workspace.id && 
+                               editingTabInfo?.url === tab.url ? (
+                                <input
+                                  type="text"
+                                  defaultValue={tab.title}
+                                  autoFocus
+                                  className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-1 
+                                    focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                  onBlur={(e) => handleUpdateTabTitle(workspace, tab.url, e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleUpdateTabTitle(workspace, tab.url, e.currentTarget.value);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <a
+                                  href={tab.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 text-sm text-gray-600 hover:text-blue-500 truncate"
+                                >
+                                  {tab.title}
+                                </a>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault(); // 防止触发链接点击
+                                  setEditingTabInfo({
+                                    workspaceId: workspace.id,
+                                    url: tab.url
+                                  });
+                                }}
+                                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          </SortableTab>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
             ))}
