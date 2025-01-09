@@ -1,5 +1,6 @@
 popup:
   title: Tab Manager
+  currentTabs: Current Tabs
   actions:
     create: New Workspace
     clear: Clear Tabs
