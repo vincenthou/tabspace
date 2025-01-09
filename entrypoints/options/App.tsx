@@ -304,7 +304,7 @@ function App() {
                   />
                   <input
                     type="text"
-                    value={editedTitles[tab.url] || tab.title}
+                    value={editedTitles[tab.url] !== undefined ? editedTitles[tab.url] : tab.title}
                     onChange={(e) => handleTitleEdit(tab.url, e.target.value)}
                     className="text-sm text-gray-600 flex-1 px-2 py-1 rounded border border-transparent
                       hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
