@@ -40,7 +40,7 @@ function App() {
     const tab = await chrome.tabs.create({ 
       url: DEFAULT_TAB_URL,
       pinned: true,
-      active: false,
+      active: true,
     });
     return tab;
   };
