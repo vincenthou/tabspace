@@ -86,6 +86,8 @@ export function useCurrentTabs() {
     };
 
     await updateWorkspace(updatedWorkspace);
+
+    return updatedWorkspace;
     // await loadWorkspaces();
   };
 

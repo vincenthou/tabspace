@@ -105,8 +105,8 @@ function App() {
   };
 
   const onAddCurrentTabs = async (workspace: Workspace) => {
-    handleAddCurrentTabs(workspace);
-    await loadWorkspaces();
+    const updatedWorkspace = await handleAddCurrentTabs(workspace);
+    await loadWorkspaces(updatedWorkspace);
   }
 
   return (

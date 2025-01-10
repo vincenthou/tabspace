@@ -19,8 +19,14 @@ export function useWorkspaces() {
   const [editingTabInfo, setEditingTabInfo] = useState<{workspaceId: string, url: string} | null>(null);
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
 
-  const loadWorkspaces = async () => {
+  const loadWorkspaces = async (updatedWorkspace?: Workspace) => {
     const spaces = await getWorkspaces();
+    if (updatedWorkspace) {
+      const index = spaces.findIndex(w => w.id === updatedWorkspace.id);
+      if (index !== -1) {
+        spaces[index] = updatedWorkspace;
+      }
+    }
     setWorkspaces(spaces);
   };
 
