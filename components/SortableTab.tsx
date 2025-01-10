@@ -9,7 +9,7 @@ interface SortableTabProps {
     favIconUrl?: string;
   };
   index: number;
-  isCreating: boolean;
+  isCreating?: boolean;
   isSortable: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
