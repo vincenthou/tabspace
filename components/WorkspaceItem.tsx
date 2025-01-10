@@ -30,6 +30,7 @@ interface WorkspaceItemProps {
   onUpdateTabTitle: (url: string, newTitle: string) => void;
   onTabDragEnd: (event: any) => void;
   onEditTab: (url: string) => void;
+  onAddCurrentTabs: () => void;
 }
 
 export function WorkspaceItem({
@@ -44,7 +45,8 @@ export function WorkspaceItem({
   onUpdateName,
   onUpdateTabTitle,
   onTabDragEnd,
-  onEditTab
+  onEditTab,
+  onAddCurrentTabs
 }: WorkspaceItemProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -111,6 +113,19 @@ export function WorkspaceItem({
               transition-colors duration-200 font-medium"
           >
             {t('popup.actions.open')}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddCurrentTabs();
+            }}
+            className="p-2 text-emerald-500 hover:text-emerald-600 rounded-lg"
+            title={t('popup.actions.addCurrentTabs')}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M12 4v16m8-8H4" />
+            </svg>
           </button>
           <button
             onClick={onDelete}

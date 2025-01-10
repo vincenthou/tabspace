@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TabInfo } from '@/types';
+import { TabInfo, Workspace } from '@/types';
 import { arrayMove } from '@dnd-kit/sortable';
 
 export function useCurrentTabs() {
@@ -64,6 +64,30 @@ export function useCurrentTabs() {
     }
   };
 
+  const handleAddCurrentTabs = async (workspace: Workspace) => {
+    const currentTabs = await chrome.tabs.query({ currentWindow: true });
+    const optionsUrl = chrome.runtime.getURL('options.html');
+    
+    const newTabs = currentTabs
+      .filter(tab => tab.url !== optionsUrl)
+      .map(tab => ({
+        url: tab.url || '',
+        title: tab.title || '',
+        favIconUrl: tab.favIconUrl || ''
+      }));
+
+    const existingUrls = new Set(workspace.tabs.map(tab => tab.url));
+    const uniqueNewTabs = newTabs.filter(tab => !existingUrls.has(tab.url));
+    
+    const updatedWorkspace = {
+      ...workspace,
+      tabs: [...workspace.tabs, ...uniqueNewTabs]
+    };
+
+    await updateWorkspace(updatedWorkspace);
+    // await loadWorkspaces();
+  };
+
   return {
     currentTabs,
     selectedTabUrls,
@@ -73,6 +97,7 @@ export function useCurrentTabs() {
     loadCurrentTabs,
     createDefaultTab,
     handleCurrentTabsDragEnd,
+    handleAddCurrentTabs,
     DEFAULT_TAB_URL,
   };
 } 

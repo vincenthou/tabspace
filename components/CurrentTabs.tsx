@@ -1,4 +1,4 @@
-import { TabInfo } from '@/types';
+import { TabInfo, Workspace } from '@/types';
 import { createI18n } from '@wxt-dev/i18n';
 import {
   DndContext,
@@ -31,6 +31,8 @@ interface CurrentTabsProps {
   onSaveWorkspace: () => void;
   onClearTabs: () => void;
   onDragEnd: (event: any) => void;
+  workspaces: Workspace[];
+  onAddTabToWorkspace: (url: string, workspaceId: string) => void;
 }
 
 export function CurrentTabs({
@@ -46,7 +48,9 @@ export function CurrentTabs({
   onCancelCreating,
   onSaveWorkspace,
   onClearTabs,
-  onDragEnd
+  onDragEnd,
+  workspaces,
+  onAddTabToWorkspace,
 }: CurrentTabsProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -128,9 +132,11 @@ export function CurrentTabs({
                   tab={tab}
                   index={index}
                   isCreating={isCreating}
-                  isSortable={isCreating}
+                  isSortable={false}
                   isSelected={selectedTabUrls.has(tab.url)}
                   onSelect={() => onToggleTabSelection(tab.url)}
+                  workspaces={workspaces}
+                  onAddToWorkspace={onAddTabToWorkspace}
                 >
                   <img 
                     src={tab.favIconUrl || 'default-favicon.png'} 

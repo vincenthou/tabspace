@@ -30,6 +30,7 @@ function App() {
     handleUpdateWorkspaceName,
     handleUpdateTabTitle,
     handleWorkspaceTabDragEnd,
+    handleAddTabToWorkspace,
   } = useWorkspaces();
 
   const {
@@ -40,6 +41,7 @@ function App() {
     setEditedTitles,
     loadCurrentTabs,
     createDefaultTab,
+    handleAddCurrentTabs,
     handleCurrentTabsDragEnd,
     DEFAULT_TAB_URL,
   } = useCurrentTabs();
@@ -139,6 +141,8 @@ function App() {
         onSaveWorkspace={() => handleSaveWorkspace(currentTabs, selectedTabUrls, editedTitles)}
         onClearTabs={handleClearTabs}
         onDragEnd={handleCurrentTabsDragEnd}
+        workspaces={workspaces}
+        onAddTabToWorkspace={(...args) => handleAddTabToWorkspace(currentTabs, ...args)}
       />
 
       <div className="space-y-2">
@@ -173,6 +177,7 @@ function App() {
               url
             });
           }}
+          onAddCurrentTabs={handleAddCurrentTabs}
         />
       </div>
     </div>

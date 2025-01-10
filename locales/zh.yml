@@ -10,6 +10,8 @@ popup:
     delete: 删除
     show: 显示导航栏
     hide: 隐藏导航栏
+    addCurrentTabs: 添加当前标签页到工作区
+    addToWorkspace: 添加到工作区
   workspace:
     input: 输入工作区名称
     empty: 还没有保存的工作区

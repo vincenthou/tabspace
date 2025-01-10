@@ -5,7 +5,6 @@ import {
   saveWorkspace, 
   updateWorkspace, 
   deleteWorkspace, 
-  setActiveWorkspace,
 } from '@/utils/storage';
 import { createI18n } from '@wxt-dev/i18n';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -93,6 +92,31 @@ export function useWorkspaces() {
     }
   };
 
+  const handleAddTabToWorkspace = async (currentTabs: TabInfo[], url: string, workspaceId: string) => {
+    const tab = currentTabs.find(t => t.url === url);
+    if (!tab) return;
+
+    const workspace = workspaces.find(w => w.id === workspaceId);
+    if (!workspace) return;
+
+    // 检查标签是否已存在于工作区
+    if (workspace.tabs.some(t => t.url === url)) {
+      return;
+    }
+
+    const updatedWorkspace = {
+      ...workspace,
+      tabs: [...workspace.tabs, {
+        url: tab.url,
+        title: tab.title,
+        favIconUrl: tab.favIconUrl
+      }]
+    };
+
+    await updateWorkspace(updatedWorkspace);
+    await loadWorkspaces();
+  };
+
   return {
     workspaces,
     isCreating,
@@ -111,5 +135,6 @@ export function useWorkspaces() {
     handleUpdateWorkspaceName,
     handleUpdateTabTitle,
     handleWorkspaceTabDragEnd,
+    handleAddTabToWorkspace,
   };
 } 
