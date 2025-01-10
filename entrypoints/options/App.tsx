@@ -38,7 +38,7 @@ function App() {
     selectedTabUrls,
     editedTitles,
     setSelectedTabUrls,
-    setEditedTitles,
+    // setEditedTitles,
     loadCurrentTabs,
     createDefaultTab,
     handleAddCurrentTabs,
@@ -177,7 +177,10 @@ function App() {
               url
             });
           }}
-          onAddCurrentTabs={handleAddCurrentTabs}
+          onAddCurrentTabs={(...args) => {
+            handleAddCurrentTabs(...args);
+            loadWorkspaces();
+          }}
         />
       </div>
     </div>
