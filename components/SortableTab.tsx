@@ -20,6 +20,7 @@ interface SortableTabProps {
   workspace?: Workspace;
   workspaces?: Workspace[];
   onAddToWorkspace?: (url: string, workspaceId: string) => void;
+  onDeleteTab?: (url: string) => void;
   children: React.ReactNode;
 }
 
@@ -33,6 +34,7 @@ export function SortableTab({
   workspace,
   workspaces,
   onAddToWorkspace,
+  onDeleteTab,
   children
 }: SortableTabProps) {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -127,6 +129,23 @@ export function SortableTab({
             </div>
           )}
         </div>
+      )}
+
+      {workspace && onDeleteTab && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDeleteTab(tab.url);
+          }}
+          className="p-1 text-gray-400 hover:text-red-500 rounded-lg"
+          title={t('popup.actions.deleteTab')}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       )}
     </div>
   );

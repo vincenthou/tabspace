@@ -18,6 +18,7 @@ interface WorkspaceListProps {
   onWorkspaceTabDragEnd: (workspace: Workspace, event: any) => void;
   onEditTab: (workspaceId: string, url: string) => void;
   onAddCurrentTabs: (workspace: Workspace) => void;
+  onDeleteTab: (workspace: Workspace, url: string) => void;
 }
 
 export function WorkspaceList({
@@ -33,7 +34,8 @@ export function WorkspaceList({
   onUpdateTabTitle,
   onWorkspaceTabDragEnd,
   onEditTab,
-  onAddCurrentTabs
+  onAddCurrentTabs,
+  onDeleteTab
 }: WorkspaceListProps) {
   if (workspaces.length === 0) {
     return (
@@ -61,6 +63,7 @@ export function WorkspaceList({
           onTabDragEnd={(event) => onWorkspaceTabDragEnd(workspace, event)}
           onEditTab={(url) => onEditTab(workspace.id, url)}
           onAddCurrentTabs={() => onAddCurrentTabs(workspace)}
+          onDeleteTab={(url) => onDeleteTab(workspace, url)}
         />
       ))}
     </div>

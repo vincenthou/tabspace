@@ -12,6 +12,7 @@ popup:
     hide: Hide Navigation Bar
     addCurrentTabs: Add current tabs to workspace
     addToWorkspace: Add to workspace
+    deleteTab: Remove from workspace
   workspace:
     input: Enter workspace name
     empty: No workspaces saved yet

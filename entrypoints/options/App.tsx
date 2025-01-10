@@ -31,6 +31,7 @@ function App() {
     handleUpdateTabTitle,
     handleWorkspaceTabDragEnd,
     handleAddTabToWorkspace,
+    handleDeleteTab,
   } = useWorkspaces();
 
   const {
@@ -103,6 +104,11 @@ function App() {
     }
   };
 
+  const onAddCurrentTabs = async (workspace: Workspace) => {
+    handleAddCurrentTabs(workspace);
+    await loadWorkspaces();
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-6">
       <Header 
@@ -142,7 +148,7 @@ function App() {
         onClearTabs={handleClearTabs}
         onDragEnd={handleCurrentTabsDragEnd}
         workspaces={workspaces}
-        onAddTabToWorkspace={(...args) => handleAddTabToWorkspace(currentTabs, ...args)}
+        onAddTabToWorkspace={handleAddTabToWorkspace}
       />
 
       <div className="space-y-2">
@@ -177,10 +183,8 @@ function App() {
               url
             });
           }}
-          onAddCurrentTabs={(...args) => {
-            handleAddCurrentTabs(...args);
-            loadWorkspaces();
-          }}
+          onAddCurrentTabs={onAddCurrentTabs}
+          onDeleteTab={handleDeleteTab}
         />
       </div>
     </div>

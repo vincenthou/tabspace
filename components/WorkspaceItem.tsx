@@ -31,6 +31,7 @@ interface WorkspaceItemProps {
   onTabDragEnd: (event: any) => void;
   onEditTab: (url: string) => void;
   onAddCurrentTabs: () => void;
+  onDeleteTab: (url: string) => void;
 }
 
 export function WorkspaceItem({
@@ -46,7 +47,8 @@ export function WorkspaceItem({
   onUpdateTabTitle,
   onTabDragEnd,
   onEditTab,
-  onAddCurrentTabs
+  onAddCurrentTabs,
+  onDeleteTab
 }: WorkspaceItemProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -157,6 +159,7 @@ export function WorkspaceItem({
                   index={index}
                   workspace={workspace}
                   isSortable={true}
+                  onDeleteTab={onDeleteTab}
                 >
                   <img
                     src={tab.favIconUrl || 'default-favicon.png'}

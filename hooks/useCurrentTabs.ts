@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TabInfo, Workspace } from '@/types';
 import { arrayMove } from '@dnd-kit/sortable';
+import { updateWorkspace } from '@/utils/storage';
 
 export function useCurrentTabs() {
   const [currentTabs, setCurrentTabs] = useState<TabInfo[]>([]);

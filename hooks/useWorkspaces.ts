@@ -92,14 +92,14 @@ export function useWorkspaces() {
     }
   };
 
-  const handleAddTabToWorkspace = async (currentTabs: TabInfo[], url: string, workspaceId: string) => {
-    const tab = currentTabs.find(t => t.url === url);
+  const handleAddTabToWorkspace = async (url: string, workspaceId: string) => {
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+    const tab = tabs.find(t => t.url === url);
     if (!tab) return;
 
     const workspace = workspaces.find(w => w.id === workspaceId);
     if (!workspace) return;
 
-    // 检查标签是否已存在于工作区
     if (workspace.tabs.some(t => t.url === url)) {
       return;
     }
@@ -107,10 +107,20 @@ export function useWorkspaces() {
     const updatedWorkspace = {
       ...workspace,
       tabs: [...workspace.tabs, {
-        url: tab.url,
-        title: tab.title,
-        favIconUrl: tab.favIconUrl
+        url: tab.url || '',
+        title: tab.title || '',
+        favIconUrl: tab.favIconUrl || ''
       }]
+    };
+
+    await updateWorkspace(updatedWorkspace);
+    await loadWorkspaces();
+  };
+
+  const handleDeleteTab = async (workspace: Workspace, url: string) => {
+    const updatedWorkspace = {
+      ...workspace,
+      tabs: workspace.tabs.filter(tab => tab.url !== url)
     };
 
     await updateWorkspace(updatedWorkspace);
@@ -136,5 +146,6 @@ export function useWorkspaces() {
     handleUpdateTabTitle,
     handleWorkspaceTabDragEnd,
     handleAddTabToWorkspace,
+    handleDeleteTab,
   };
 } 
